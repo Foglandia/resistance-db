@@ -359,6 +359,15 @@ export default function App() {
     } catch { toast$("Failed to approve.", true); }
   };
 
+  const approveAll = async () => {
+    if (!window.confirm(`Approve all ${pending.length} pending organizations?`)) return;
+    try {
+      await Promise.all(pending.map(o => sb.update(o.id, { status: "approved" })));
+      setOrgs(p => p.map(o => o.status === "pending" ? {...o, status:"approved"} : o));
+      toast$(`${pending.length} organizations approved!`);
+    } catch { toast$("Failed to approve all.", true); }
+  };
+
   const remove = async id => {
     try {
       await sb.delete(id);
@@ -426,7 +435,7 @@ export default function App() {
         {view === "directory" && <>
           <div className="hero">
             <p className="hero-eyebrow">The Resistance Directory</p>
-            <h1 className="hero-title">Organizations <em>fighting back</em><br/>against the administration</h1>
+            <h1 className="hero-title">Organizations <em>fighting back</em><br/>against the Trump Administration</h1>
             <p className="hero-sub">A searchable database of nonprofits, coalitions, informal groups, and organizations actively opposing Trump Administration policies.</p>
             <div style={{marginBottom:32}}>
               <p className="legend-title">Organization Type Key</p>
@@ -587,7 +596,12 @@ export default function App() {
             {adminTab==="pending" && (
               pending.length===0
                 ? <p style={{color:"var(--muted)"}}>No pending submissions 🎉</p>
-                : pending.map(org=>(
+                : <>
+                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:20}}>
+                    <p style={{color:"var(--muted)",fontSize:14}}>{pending.length} organizations waiting for review</p>
+                    <button className="btn btn-green" onClick={approveAll}>✓ Approve All {pending.length}</button>
+                  </div>
+                  {pending.map(org=>(
                   <div key={org.id} className="pending-card">
                     <div style={{display:"flex",justifyContent:"space-between",gap:16,flexWrap:"wrap"}}>
                       <div style={{flex:1}}>
@@ -608,7 +622,8 @@ export default function App() {
                       </div>
                     </div>
                   </div>
-                ))
+                  ))}
+                </>
             )}
 
             {adminTab==="approved" && (
@@ -862,6 +877,26 @@ function ProPublicaImporter({ existingIds, onImport }) {
   const [selected, setSelected] = useState(new Set());
   const [searched, setSearched] = useState(false);
 
+  const search = async () => {
+    if (!keyword && !category) { setError("Enter a keyword or select a category."); return; }
+    setLoading(true); setError(""); setResults([]); setSelected(new Set()); setSearched(false);
+    try {
+      const q = keyword || NTEE_CATEGORIES.find(c=>c.code===category)?.label || "";
+      const stateParam = state && state !== "National" ? `&state_ab=${state}` : "";
+      const url = `https://projects.propublica.org/nonprofits/api/v2/search.json?q=${encodeURIComponent(q)}${stateParam}&per_page=25`;
+      const res = await fetch(url);
+      if (!res.ok) throw new Error("API error");
+      const data = await res.json();
+      const orgs = (data.organizations || []).filter(o => !existingIds.includes(o.ein));
+      setResults(orgs);
+      setSearched(true);
+      if (orgs.length === 0) setError("No results found. Try a different keyword or category.");
+    } catch(e) {
+      setError("Could not reach ProPublica API. Please try again.");
+    }
+    setLoading(false);
+  };
+
   const MOCK_RESULTS = [
     { ein:"13-6213516", name:"NAACP Legal Defense Fund", city:"New York", state:"NY", ntee_code:"R20", income_amount:32000000, ruling_date:"19400101" },
     { ein:"52-0241390", name:"Lawyers Committee for Civil Rights", city:"Washington", state:"DC", ntee_code:"I20", income_amount:14500000, ruling_date:"19630101" },
@@ -939,15 +974,10 @@ function ProPublicaImporter({ existingIds, onImport }) {
 
   return (
     <div>
-      <div style={{background:"var(--blue-light)",border:"1px solid #b8d0e8",borderRadius:8,padding:20,marginBottom:16}}>
+      <div style={{background:"var(--blue-light)",border:"1px solid #b8d0e8",borderRadius:8,padding:20,marginBottom:28}}>
         <strong style={{color:"var(--blue)"}}>📡 ProPublica Nonprofit Explorer</strong>
         <p style={{fontSize:13,color:"var(--blue)",marginTop:6,lineHeight:1.6}}>
           Search 1.8M+ registered nonprofits. Results land in your <strong>Pending</strong> queue — you review and approve before anything goes live.
-        </p>
-      </div>
-      <div style={{background:"#fffbf0",border:"1px solid #e8d890",borderRadius:8,padding:14,marginBottom:28}}>
-        <p style={{fontSize:13,color:"#806010",lineHeight:1.6}}>
-          <strong>⚠ Demo mode:</strong> The live ProPublica API is blocked in this prototype sandbox. Searches below use a curated sample of 15 real organizations so you can test the full import and approval flow. The live API will work once deployed to Vercel.
         </p>
       </div>
 
@@ -1005,7 +1035,7 @@ function ProPublicaImporter({ existingIds, onImport }) {
                     borderRadius:8, padding:"14px 18px", cursor:"pointer", transition:"all 0.15s",
                     display:"flex", alignItems:"center", gap:16}}>
                   <input type="checkbox" checked={isSel} onChange={()=>toggleSelect(org.ein)}
-                    style={{width:"auto",flexShrink:0,accentColor:"var(--green)",width:18,height:18}} />
+                    style={{flexShrink:0,accentColor:"var(--green)",width:18,height:18}} />
                   <div style={{flex:1,minWidth:0}}>
                     <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:10,flexWrap:"wrap"}}>
                       <strong style={{fontSize:15}}>{org.name}</strong>
