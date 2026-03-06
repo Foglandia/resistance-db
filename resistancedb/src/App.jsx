@@ -350,7 +350,14 @@ export default function App() {
   const clearFilters = () => setFilters({q:"",type:"",state:"",focus:"",month:""});
   const hasFilter = Object.values(filters).some(Boolean);
   const openOrg = o => { setSelected(o); setView("org"); };
-
+const approveAll = async () => {
+    if (!window.confirm(`Approve all ${pending.length} pending organizations?`)) return;
+    try {
+      await Promise.all(pending.map(o => sb.update(o.id, { status: "approved" })));
+      setOrgs(p => p.map(o => o.status === "pending" ? {...o, status:"approved"} : o));
+      toast$(`${pending.length} organizations approved!`);
+    } catch { toast$("Failed to approve all.", true); }
+  };
   const approve = async id => {
     try {
       await sb.update(id, { status: "approved" });
