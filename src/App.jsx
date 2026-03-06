@@ -1005,7 +1005,7 @@ function ProPublicaImporter({ existingIds, onImport }) {
                     borderRadius:8, padding:"14px 18px", cursor:"pointer", transition:"all 0.15s",
                     display:"flex", alignItems:"center", gap:16}}>
                   <input type="checkbox" checked={isSel} onChange={()=>toggleSelect(org.ein)}
-                    style={{width:"auto",flexShrink:0,accentColor:"var(--green)",width:18,height:18}} />
+                    style={{flexShrink:0,accentColor:"var(--green)",width:18,height:18}} />
                   <div style={{flex:1,minWidth:0}}>
                     <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:10,flexWrap:"wrap"}}>
                       <strong style={{fontSize:15}}>{org.name}</strong>
