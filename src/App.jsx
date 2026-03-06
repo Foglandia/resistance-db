@@ -882,25 +882,7 @@ function ProPublicaImporter({ existingIds, onImport }) {
     setLoading(false);
   };
 
-  const search = async () => {
-    if (!keyword && !category) { setError("Enter a keyword or select a category."); return; }
-    setLoading(true); setError(""); setResults([]); setSelected(new Set()); setSearched(false);
-    try {
-      const q = keyword || NTEE_CATEGORIES.find(c=>c.code===category)?.label || "";
-      const stateParam = state && state !== "National" ? `&state_ab=${state}` : "";
-      const url = `https://projects.propublica.org/nonprofits/api/v2/search.json?q=${encodeURIComponent(q)}${stateParam}&per_page=25`;
-      const res = await fetch(url);
-      if (!res.ok) throw new Error("API error");
-      const data = await res.json();
-      const orgs = (data.organizations || []).filter(o => !existingIds.includes(o.ein));
-      setResults(orgs);
-      setSearched(true);
-      if (orgs.length === 0) setError("No results found. Try a different keyword or category.");
-    } catch(e) {
-      setError("Could not reach ProPublica API. Please try again.");
-    }
-    setLoading(false);
-  };
+
 
   const toggleSelect = ein => setSelected(s => {
     const n = new Set(s);
