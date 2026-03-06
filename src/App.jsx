@@ -426,7 +426,7 @@ export default function App() {
         {view === "directory" && <>
           <div className="hero">
             <p className="hero-eyebrow">The Resistance Directory</p>
-            <h1 className="hero-title">Organizations <em>fighting back</em><br/>against the administration</h1>
+            <h1 className="hero-title">Organizations <em>fighting back</em><br/>against the Trump administration</h1>
             <p className="hero-sub">A searchable database of nonprofits, coalitions, informal groups, and organizations actively opposing Trump Administration policies.</p>
             <div style={{marginBottom:32}}>
               <p className="legend-title">Organization Type Key</p>
