@@ -596,7 +596,12 @@ export default function App() {
             {adminTab==="pending" && (
               pending.length===0
                 ? <p style={{color:"var(--muted)"}}>No pending submissions 🎉</p>
-                : pending.map(org=>(
+                : <>
+                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:20}}>
+                    <p style={{color:"var(--muted)",fontSize:14}}>{pending.length} organizations waiting for review</p>
+                    <button style={{background:"#2a6644",color:"white",border:"none",padding:"10px 22px",borderRadius:"6px",cursor:"pointer",fontWeight:600,fontSize:13}} onClick={approveAll}>✓ Approve All ({pending.length})</button>
+                  </div>
+                  {pending.map(org=>(
                   <div key={org.id} className="pending-card">
                     <div style={{display:"flex",justifyContent:"space-between",gap:16,flexWrap:"wrap"}}>
                       <div style={{flex:1}}>
@@ -617,7 +622,8 @@ export default function App() {
                       </div>
                     </div>
                   </div>
-                ))
+                ))}
+                </>
             )}
 
             {adminTab==="approved" && (
