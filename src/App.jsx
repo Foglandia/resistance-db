@@ -862,45 +862,43 @@ function ProPublicaImporter({ existingIds, onImport }) {
   const [selected, setSelected] = useState(new Set());
   const [searched, setSearched] = useState(false);
 
-  const MOCK_RESULTS = [
-    { ein:"13-6213516", name:"NAACP Legal Defense Fund", city:"New York", state:"NY", ntee_code:"R20", income_amount:32000000, ruling_date:"19400101" },
-    { ein:"52-0241390", name:"Lawyers Committee for Civil Rights", city:"Washington", state:"DC", ntee_code:"I20", income_amount:14500000, ruling_date:"19630101" },
-    { ein:"13-2637400", name:"National Immigration Law Center", city:"Los Angeles", state:"CA", ntee_code:"P84", income_amount:9800000, ruling_date:"19790101" },
-    { ein:"94-2979808", name:"Earthjustice", city:"San Francisco", state:"CA", ntee_code:"C30", income_amount:120000000, ruling_date:"19710101" },
-    { ein:"52-1388917", name:"Human Rights Campaign", city:"Washington", state:"DC", ntee_code:"R26", income_amount:45000000, ruling_date:"19800101" },
-    { ein:"13-3441466", name:"Center for Reproductive Rights", city:"New York", state:"NY", ntee_code:"E42", income_amount:35000000, ruling_date:"19920101" },
-    { ein:"04-2586254", name:"Political Research Associates", city:"Somerville", state:"MA", ntee_code:"W20", income_amount:2100000, ruling_date:"19810101" },
-    { ein:"23-7432162", name:"Mijente Support Committee", city:"Phoenix", state:"AZ", ntee_code:"P84", income_amount:3200000, ruling_date:"20150101" },
-    { ein:"20-5951630", name:"Color of Change", city:"Oakland", state:"CA", ntee_code:"R20", income_amount:22000000, ruling_date:"20050101" },
-    { ein:"27-3971436", name:"Advancement Project", city:"Washington", state:"DC", ntee_code:"R20", income_amount:8700000, ruling_date:"19990101" },
-    { ein:"52-1493470", name:"National Women's Law Center", city:"Washington", state:"DC", ntee_code:"R24", income_amount:28000000, ruling_date:"19720101" },
-    { ein:"13-3505428", name:"Make the Road New York", city:"Brooklyn", state:"NY", ntee_code:"P84", income_amount:19000000, ruling_date:"19970101" },
-    { ein:"26-4000528", name:"Demos", city:"New York", state:"NY", ntee_code:"W20", income_amount:7400000, ruling_date:"19991201" },
-    { ein:"94-3213100", name:"Asian Americans Advancing Justice", city:"San Francisco", state:"CA", ntee_code:"R20", income_amount:6300000, ruling_date:"19910101" },
-    { ein:"52-1524483", name:"League of Conservation Voters", city:"Washington", state:"DC", ntee_code:"C30", income_amount:60000000, ruling_date:"19700101" },
-  ];
+  const search = async () => {
+    if (!keyword && !category) { setError("Enter a keyword or select a category."); return; }
+    setLoading(true); setError(""); setResults([]); setSelected(new Set()); setSearched(false);
+    try {
+      const q = keyword || NTEE_CATEGORIES.find(c=>c.code===category)?.label || "";
+      const stateParam = state && state !== "National" ? `&state_ab=${state}` : "";
+      const url = `https://projects.propublica.org/nonprofits/api/v2/search.json?q=${encodeURIComponent(q)}${stateParam}&per_page=25`;
+      const res = await fetch(url);
+      if (!res.ok) throw new Error("API error");
+      const data = await res.json();
+      const orgs = (data.organizations || []).filter(o => !existingIds.includes(o.ein));
+      setResults(orgs);
+      setSearched(true);
+      if (orgs.length === 0) setError("No results found. Try a different keyword or category.");
+    } catch(e) {
+      setError("Could not reach ProPublica API. Please try again.");
+    }
+    setLoading(false);
+  };
 
   const search = async () => {
     if (!keyword && !category) { setError("Enter a keyword or select a category."); return; }
     setLoading(true); setError(""); setResults([]); setSelected(new Set()); setSearched(false);
-
-    // Simulate network delay
-    await new Promise(r => setTimeout(r, 800));
-
-    // Filter mock results by keyword/state for a realistic feel
-    const q = keyword.toLowerCase();
-    const filtered = MOCK_RESULTS.filter(o => {
-      if (existingIds.includes(o.ein)) return false;
-      if (q && !o.name.toLowerCase().includes(q) && !o.city?.toLowerCase().includes(q)) {
-        // still show some results for any keyword so demo works
-      }
-      if (state && state !== "National" && o.state !== state) return false;
-      return true;
-    });
-
-    setResults(filtered.length > 0 ? filtered : MOCK_RESULTS.filter(o => !existingIds.includes(o.ein)));
-    setSearched(true);
-    if (filtered.length === 0) setError("No results found. Try a different keyword.");
+    try {
+      const q = keyword || NTEE_CATEGORIES.find(c=>c.code===category)?.label || "";
+      const stateParam = state && state !== "National" ? `&state_ab=${state}` : "";
+      const url = `https://projects.propublica.org/nonprofits/api/v2/search.json?q=${encodeURIComponent(q)}${stateParam}&per_page=25`;
+      const res = await fetch(url);
+      if (!res.ok) throw new Error("API error");
+      const data = await res.json();
+      const orgs = (data.organizations || []).filter(o => !existingIds.includes(o.ein));
+      setResults(orgs);
+      setSearched(true);
+      if (orgs.length === 0) setError("No results found. Try a different keyword or category.");
+    } catch(e) {
+      setError("Could not reach ProPublica API. Please try again.");
+    }
     setLoading(false);
   };
 
@@ -939,15 +937,10 @@ function ProPublicaImporter({ existingIds, onImport }) {
 
   return (
     <div>
-      <div style={{background:"var(--blue-light)",border:"1px solid #b8d0e8",borderRadius:8,padding:20,marginBottom:16}}>
+      <div style={{background:"var(--blue-light)",border:"1px solid #b8d0e8",borderRadius:8,padding:20,marginBottom:28}}>
         <strong style={{color:"var(--blue)"}}>📡 ProPublica Nonprofit Explorer</strong>
         <p style={{fontSize:13,color:"var(--blue)",marginTop:6,lineHeight:1.6}}>
           Search 1.8M+ registered nonprofits. Results land in your <strong>Pending</strong> queue — you review and approve before anything goes live.
-        </p>
-      </div>
-      <div style={{background:"#fffbf0",border:"1px solid #e8d890",borderRadius:8,padding:14,marginBottom:28}}>
-        <p style={{fontSize:13,color:"#806010",lineHeight:1.6}}>
-          <strong>⚠ Demo mode:</strong> The live ProPublica API is blocked in this prototype sandbox. Searches below use a curated sample of 15 real organizations so you can test the full import and approval flow. The live API will work once deployed to Vercel.
         </p>
       </div>
 
